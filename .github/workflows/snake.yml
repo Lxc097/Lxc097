@@ -1,0 +1,89 @@
+name: Update contribution snake
+
+on:
+  schedule:
+    - cron: "17 1 * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/snake.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: contribution-snake
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Generate light and dark contribution graphs
+        uses: Platane/snk/svg-only@d8f6715049803e982ee5ff501b6b9b7d5deeb09b # v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            dist/github-contribution-grid-snake.svg
+            dist/github-contribution-grid-snake-dark.svg?palette=github-dark
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish generated SVGs to the output branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          python3 - <<'PY'
+          import base64
+          import json
+          import os
+          from pathlib import Path
+          from urllib.error import HTTPError
+          from urllib.request import Request, urlopen
+
+          root = "https://api.github.com/repos/" + os.environ["REPOSITORY"]
+          headers = {
+              "Authorization": "Bearer " + os.environ["GH_TOKEN"],
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+          }
+
+          def api(path, method="GET", data=None):
+              body = None if data is None else json.dumps(data).encode()
+              request = Request(root + path, data=body, headers=headers, method=method)
+              with urlopen(request) as response:
+                  return json.load(response)
+
+          try:
+              api("/git/ref/heads/output")
+          except HTTPError as error:
+              if error.code != 404:
+                  raise
+              source = api("/git/ref/heads/" + os.environ["DEFAULT_BRANCH"])
+              api("/git/refs", "POST", {"ref": "refs/heads/output", "sha": source["object"]["sha"]})
+
+          for name in ("github-contribution-grid-snake.svg", "github-contribution-grid-snake-dark.svg"):
+              content = Path("dist", name).read_bytes()
+              if b"<svg" not in content:
+                  raise ValueError("Generated output is not SVG: " + name)
+              payload = {
+                  "message": "Update " + name,
+                  "content": base64.b64encode(content).decode(),
+                  "branch": "output",
+              }
+              try:
+                  existing = api("/contents/" + name + "?ref=output")
+              except HTTPError as error:
+                  if error.code != 404:
+                      raise
+              else:
+                  if base64.b64decode(existing["content"]) == content:
+                      continue
+                  payload["sha"] = existing["sha"]
+              api("/contents/" + name, "PUT", payload)
+              print("Published " + name)
+          PY
+
