@@ -37,7 +37,7 @@
 | Project | Work | Stack / Focus |
 | --- | --- | --- |
 | [Intelligent Logistics Vehicle](https://github.com/Lxc097/gongxunsai) | Developing a competition robot with Jetson perception and navigation, OpenMV terminal vision, and STM32 chassis and actuator control. **In development:** full competition-run integration is ongoing. | C, Python, STM32F407, FreeRTOS, Jetson, OpenMV, A* |
-| [Multi-model Dispatch Console](https://github.com/Lxc097/Integrated-Tools) | Building a responsive interface for model selection, task input, Markdown results, and token summaries, with a Three.js globe. **Frontend prototype:** currently uses mock adapters. | React, JavaScript, Vite, Three.js |
+| [Multi-model Dispatch Console](https://github.com/Lxc097/Integrated-Tools) | Building a responsive interface for model selection, task input, Markdown results, and token summaries, with a Three.js globe. **Frontend prototype:** adapters call Ollama or a web chat API. | React, JavaScript, Vite, Three.js |
 | [c-vector](https://github.com/eteran/c-vector) | Corrected the README's resize and swap examples and clarified macro arguments. Validated the examples with GCC and existing tests. [PR #95 — merged](https://github.com/eteran/c-vector/pull/95). | C, GCC, API documentation |
 
 ## Tech Stack
